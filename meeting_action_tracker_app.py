@@ -1089,18 +1089,7 @@ EXTRACTION_SCHEMA = {
     ],
 }
 
-DEFAULT_TRANSCRIPT = """Meeting: Product Launch Sync
-Date: 2026-03-10
-
-Sarah: We need the landing page finalized by Friday.
-Arjun: I can own the landing page copy and coordinate with design.
-Mei: Analytics events are still incomplete. I need support from DevOps.
-Ravi: I will complete analytics instrumentation by next Tuesday.
-Sarah: Good. We also need legal approval for the pricing page.
-Nina: I will send the pricing page to legal by tomorrow 2 PM.
-Sarah: Decision taken: launch date remains March 28 unless legal flags a blocker.
-Mei: Main risk is incomplete analytics coverage before UAT.
-"""
+DEFAULT_TRANSCRIPT = ""
 
 
 def init_state() -> None:
