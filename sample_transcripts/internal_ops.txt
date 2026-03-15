@@ -1,0 +1,14 @@
+Meeting: Internal Operations Weekly Sync
+Date: 2026-03-12
+
+Karan: Server monitoring alerts have increased this week, especially during deployment windows.
+Meera: I need DevOps support to verify whether the latest configuration changes caused the spike.
+Dev: I will review the deployment logs and share findings by tomorrow noon.
+Karan: We also need to clean up inactive user accounts before the next audit cycle.
+Meera: I can extract the inactive user list, but HR must first confirm the final employee roster.
+Sonia: I will get the roster confirmation from HR by Friday.
+Dev: Another issue is that API latency was elevated twice this week after the nightly batch jobs.
+Karan: Please investigate whether batch scheduling is overlapping with production traffic.
+Dev: I will analyze the batch execution timing and propose changes by Monday.
+Karan: Decision taken: no new production release until alert stability improves.
+Meera: Main blocker is incomplete access audit data from HR, which delays user cleanup.

@@ -1,0 +1,14 @@
+Meeting: Client Review – Website Redesign
+Date: 2026-03-12
+
+Anita: The client likes the new homepage direction, but they want the CTA section simplified and made more prominent.
+Client: Yes, the current call-to-action feels too crowded. We want something cleaner and more direct.
+Rahul: I can update the homepage CTA copy and share three revised variants by Monday afternoon.
+Priya: The client also asked for more visual emphasis on the case studies section.
+Client: Correct. We want one healthcare example and one manufacturing example added to the case studies page.
+Anita: Good. We also need final client approval on the case study layout before design starts.
+Priya: I will prepare updated wireframes and send them for review by Tuesday evening.
+Rahul: We still need confirmation on whether the downloadable assets should be gated or ungated.
+Client: We will confirm that decision by Wednesday.
+Anita: Decision taken: homepage concept is approved with minor revisions.
+Priya: Main risk is delayed client confirmation on downloadable assets, which could impact the timeline.

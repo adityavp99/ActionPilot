@@ -1,9 +1,10 @@
 import json
 import os
+import re
 import textwrap
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import streamlit as st
@@ -372,6 +373,12 @@ h1, h2, h3, h4, h5, h6, p, label, div, span {
     font-size: 1rem !important;
     line-height: 1.65 !important;
 }
+.stTextArea textarea::placeholder,
+.stTextInput input::placeholder {
+    color: rgba(205, 217, 248, 0.58) !important;
+    -webkit-text-fill-color: rgba(205, 217, 248, 0.58) !important;
+    opacity: 1 !important;
+}
 [data-testid="stTextArea"],
 [data-testid="stFileUploader"] {
     position: relative;
@@ -649,6 +656,12 @@ select option {
     padding: 0.95rem 1rem;
     border-radius: 18px;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 24px rgba(3, 12, 18, 0.16);
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    line-height: 1.6;
 }
 .warn-strip {
     background: linear-gradient(135deg, rgba(73, 53, 94, 0.84) 0%, rgba(52, 42, 84, 0.92) 100%);
@@ -657,6 +670,12 @@ select option {
     padding: 0.95rem 1rem;
     border-radius: 18px;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 10px 24px rgba(16, 10, 6, 0.12);
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    line-height: 1.6;
 }
 hr {
     border: none;
@@ -664,7 +683,8 @@ hr {
 }
 [data-testid="stSidebar"] .stMarkdown,
 [data-testid="stSidebar"] .stCaption,
-[data-testid="stSidebar"] .stSelectbox {
+[data-testid="stSidebar"] .stSelectbox,
+[data-testid="stSidebar"] .stButton {
     position: relative;
     z-index: 1;
 }
@@ -679,6 +699,64 @@ hr {
     letter-spacing: -0.03em;
     margin-bottom: 0.15rem;
 }
+[data-testid="stSidebar"] .sidebar-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+[data-testid="stSidebar"] .sidebar-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+[data-testid="stSidebar"] .sidebar-title {
+    font-size: 2rem;
+    font-weight: 780;
+    letter-spacing: -0.03em;
+    margin: 0;
+}
+[data-testid="stSidebar"] .sidebar-subtitle {
+    color: #c8d8ff;
+    font-size: 0.96rem;
+    margin-top: 0.2rem;
+}
+[data-testid="stSidebar"] .sidebar-section-label {
+    color: #e8efff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0.25rem 0 0.15rem 0;
+}
+[data-testid="stSidebar"] .sidebar-hint {
+    color: #aebee6;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+[data-testid="stSidebar"] .stButton button {
+    width: 100%;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    min-height: 54px !important;
+    border-radius: 16px !important;
+    padding: 0.8rem 0.95rem !important;
+    background:
+        linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 34%, transparent 34%),
+        linear-gradient(180deg, rgba(30, 41, 71, 0.9) 0%, rgba(15, 24, 44, 0.96) 100%) !important;
+    border: 1px solid rgba(146, 165, 230, 0.18) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06) !important;
+}
+[data-testid="stSidebar"] .stButton button:hover {
+    background:
+        linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 34%, transparent 34%),
+        linear-gradient(180deg, rgba(45, 58, 94, 0.94) 0%, rgba(20, 31, 56, 0.98) 100%) !important;
+    border-color: rgba(167, 183, 244, 0.3) !important;
+}
+[data-testid="stSidebar"] .sidebar-card-meta {
+    color: #9eb1dd;
+    font-size: 0.8rem;
+}
 [data-testid="stSidebar"] ul {
     padding-left: 1rem;
 }
@@ -687,6 +765,162 @@ hr {
 }
 [data-testid="stSidebar"] [data-baseweb="select"] > div {
     background: linear-gradient(180deg, rgba(19, 27, 49, 0.96) 0%, rgba(12, 20, 36, 0.98) 100%) !important;
+}
+/* Keep the sidebar fixed open on desktop. We only expose the native
+   collapse/expand affordance again on narrow screens where the sidebar
+   would otherwise take too much space. */
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"],
+[aria-label*="collapse sidebar" i],
+[title*="collapse sidebar" i],
+[aria-label*="expand sidebar" i],
+[title*="expand sidebar" i],
+[aria-label*="open sidebar" i],
+[title*="open sidebar" i] {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+[data-testid="stSidebarCollapseButton"] {
+    top: 10px !important;
+    right: 10px !important;
+}
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"] {
+    position: fixed !important;
+    top: 10px !important;
+    left: 10px !important;
+    z-index: 1000 !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(165, 178, 236, 0.2) !important;
+    background: linear-gradient(180deg, rgba(42, 33, 95, 0.96) 0%, rgba(19, 25, 52, 0.99) 100%) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 18px rgba(7, 11, 28, 0.18) !important;
+    font-size: 0 !important;
+    color: transparent !important;
+    text-shadow: none !important;
+    overflow: hidden !important;
+}
+[data-testid="stSidebarCollapseButton"] button,
+[data-testid="stSidebarCollapsedControl"] button,
+[data-testid="collapsedControl"] button,
+[aria-label*="collapse sidebar" i],
+[title*="collapse sidebar" i],
+[aria-label*="expand sidebar" i],
+[title*="expand sidebar" i],
+[aria-label*="open sidebar" i],
+[title*="open sidebar" i] {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(165, 178, 236, 0.2) !important;
+    background: linear-gradient(180deg, rgba(42, 33, 95, 0.96) 0%, rgba(19, 25, 52, 0.99) 100%) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 18px rgba(7, 11, 28, 0.18) !important;
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0 !important;
+}
+[data-testid="stSidebarCollapsedControl"]::before,
+[data-testid="collapsedControl"]::before,
+[data-testid="stSidebarCollapseButton"] button::before,
+[data-testid="stSidebarCollapsedControl"] button::before,
+[data-testid="collapsedControl"] button::before,
+[aria-label*="collapse sidebar" i]::before,
+[title*="collapse sidebar" i]::before,
+[aria-label*="expand sidebar" i]::before,
+[title*="expand sidebar" i]::before,
+[aria-label*="open sidebar" i]::before,
+[title*="open sidebar" i]::before {
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -54%);
+    pointer-events: none;
+    text-shadow: 0 0 8px rgba(255,255,255,0.16);
+}
+[data-testid="stSidebarCollapseButton"] button::before,
+[data-testid="collapsedControl"] button::before,
+[aria-label*="collapse sidebar" i]::before,
+[title*="collapse sidebar" i]::before {
+    content: "‹";
+}
+[data-testid="stSidebarCollapsedControl"]::before,
+[data-testid="collapsedControl"]::before,
+[data-testid="stSidebarCollapsedControl"] button::before,
+[aria-label*="expand sidebar" i]::before,
+[title*="expand sidebar" i]::before,
+[aria-label*="open sidebar" i]::before,
+[title*="open sidebar" i]::before {
+    content: "›";
+}
+[data-testid="stSidebarCollapsedControl"]::after,
+[data-testid="collapsedControl"]::after {
+    content: "›";
+    color: #ffffff !important;
+    font-size: 24px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    position: absolute !important;
+    inset: 50% auto auto 50% !important;
+    transform: translate(-50%, -54%) !important;
+    pointer-events: none !important;
+    z-index: 3 !important;
+    text-shadow: 0 0 10px rgba(255,255,255,0.2) !important;
+}
+[data-testid="stSidebarCollapseButton"] button svg,
+[aria-label*="sidebar" i] svg,
+[title*="sidebar" i] svg,
+[data-testid="stSidebar"] details summary svg,
+[data-testid="stSidebar"] summary svg {
+    opacity: 0 !important;
+}
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="stSidebarCollapsedControl"] *,
+[data-testid="collapsedControl"],
+[data-testid="collapsedControl"] *,
+[aria-label*="expand sidebar" i],
+[aria-label*="expand sidebar" i] *,
+[title*="expand sidebar" i],
+[title*="expand sidebar" i] *,
+[aria-label*="open sidebar" i],
+[aria-label*="open sidebar" i] *,
+[title*="open sidebar" i],
+[title*="open sidebar" i] * {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+    stroke: #ffffff !important;
+    opacity: 1 !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+[data-testid="stSidebarCollapsedControl"] > *:not(button):not(style),
+[data-testid="collapsedControl"] > *:not(button):not(style) {
+    opacity: 0 !important;
+    color: transparent !important;
+    fill: transparent !important;
+    stroke: transparent !important;
+}
+[data-testid="stSidebarCollapsedControl"] button,
+[data-testid="collapsedControl"] button,
+[aria-label*="expand sidebar" i],
+[title*="expand sidebar" i],
+[aria-label*="open sidebar" i],
+[title*="open sidebar" i] {
+    font-size: 22px !important;
+    font-weight: 800 !important;
+    letter-spacing: -1px !important;
+    text-indent: -9999px !important;
+    overflow: hidden !important;
+    color: transparent !important;
+    text-shadow: none !important;
 }
 [data-testid="stVerticalBlock"] [data-testid="stTextArea"] {
     margin-bottom: 0.4rem;
@@ -723,6 +957,19 @@ hr {
     }
 }
 @media (max-width: 768px) {
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"],
+    [aria-label*="collapse sidebar" i],
+    [title*="collapse sidebar" i],
+    [aria-label*="expand sidebar" i],
+    [title*="expand sidebar" i],
+    [aria-label*="open sidebar" i],
+    [title*="open sidebar" i] {
+        display: inline-flex !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+    }
     .block-container {
         padding-left: 1rem;
         padding-right: 1rem;
@@ -866,6 +1113,7 @@ def init_state() -> None:
         "request_date": today,
         "request_count": 0,
         "last_source": "Starter sample",
+        "recent_sessions": [],
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -906,6 +1154,41 @@ def load_sample_files() -> Dict[str, str]:
             except Exception:
                 pass
     return samples
+
+
+def add_recent_session(
+    transcript_text: str, source: str, parsed: Optional[Dict[str, Any]] = None
+) -> None:
+    title = (
+        parsed.get("meeting_title", "Untitled Session")
+        if isinstance(parsed, dict)
+        else source or "Untitled Session"
+    )
+    meeting_date = (
+        parsed.get("meeting_date", "")
+        if isinstance(parsed, dict)
+        else datetime.now().strftime("%Y-%m-%d")
+    )
+
+    entry = {
+        "title": title,
+        "meeting_date": meeting_date,
+        "source": source,
+        "transcript_text": transcript_text,
+        "parsed": parsed if isinstance(parsed, dict) else None,
+    }
+
+    recent_sessions = [
+        item
+        for item in st.session_state.recent_sessions
+        if not (
+            item.get("title") == entry["title"]
+            and item.get("source") == entry["source"]
+            and item.get("transcript_text") == entry["transcript_text"]
+        )
+    ]
+    recent_sessions.insert(0, entry)
+    st.session_state.recent_sessions = recent_sessions[:8]
 
 
 def extract_meeting_data(transcript: str) -> Dict[str, Any]:
@@ -949,42 +1232,220 @@ Transcript:
         return mock_extract(transcript)
 
 
-def mock_extract(transcript: str) -> Dict[str, Any]:
+def _clean_text(value: str) -> str:
+    return re.sub(r"\s+", " ", (value or "").strip())
+
+
+def _strip_trailing_period(value: str) -> str:
+    return value[:-1] if value.endswith(".") else value
+
+
+def _extract_meta(transcript: str) -> Dict[str, str]:
+    title_match = re.search(r"(?im)^\s*Meeting:\s*(.+?)\s*$", transcript)
+    date_match = re.search(r"(?im)^\s*Date:\s*(.+?)\s*$", transcript)
     return {
-        "meeting_title": "Product Launch Sync",
-        "meeting_date": datetime.now().strftime("%Y-%m-%d"),
-        "summary": "The team reviewed launch readiness, confirmed the launch date remains in place, and aligned on next actions for the landing page, analytics instrumentation, and legal review.",
-        "decisions": ["Launch date remains March 28 unless legal flags a blocker."],
-        "risks_blockers": [
-            "Analytics coverage may be incomplete before UAT.",
-            "Legal approval may affect pricing page readiness.",
-        ],
-        "action_items": [
+        "meeting_title": _clean_text(title_match.group(1)) if title_match else "Meeting",
+        "meeting_date": _clean_text(date_match.group(1))
+        if date_match
+        else datetime.now().strftime("%Y-%m-%d"),
+    }
+
+
+def _parse_utterances(transcript: str) -> List[Dict[str, str]]:
+    utterances: List[Dict[str, str]] = []
+    for raw_line in transcript.splitlines():
+        line = raw_line.strip()
+        if not line or line.lower().startswith(("meeting:", "date:")):
+            continue
+        if ":" not in line:
+            continue
+        speaker, content = line.split(":", 1)
+        speaker = _clean_text(speaker)
+        content = _clean_text(content)
+        if speaker and content:
+            utterances.append({"speaker": speaker, "content": content})
+    return utterances
+
+
+def _extract_deadline(text: str) -> str:
+    patterns = [
+        r"\bby\s+([^.,;]+)",
+        r"\bbefore\s+([^.,;]+)",
+        r"\bfor\s+(next\s+\w+)",
+        r"\b(on\s+\w+(?:\s+\w+)?)\b",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+        if match:
+            return _strip_trailing_period(_clean_text(match.group(1)))
+    return ""
+
+
+def _normalize_task_text(text: str) -> str:
+    task = _clean_text(text)
+    task = re.sub(r"^(I|We)\s+(will|can|need to|need|should)\s+", "", task, flags=re.IGNORECASE)
+    task = re.sub(r"^Please\s+", "", task, flags=re.IGNORECASE)
+    task = re.sub(r"^(The team|Team)\s+needs?\s+to\s+", "", task, flags=re.IGNORECASE)
+    task = re.sub(r"\s+\b(by|before|on)\b\s+[^.,;]+", "", task, flags=re.IGNORECASE)
+    task = re.sub(
+        r"^the (.+?) finalized$",
+        lambda match: f"Finalize the {match.group(1)}",
+        task,
+        flags=re.IGNORECASE,
+    )
+    task = re.sub(
+        r"^legal approval for (.+)",
+        lambda match: f"Obtain legal approval for {match.group(1)}",
+        task,
+        flags=re.IGNORECASE,
+    )
+    task = re.sub(r"^also\s+", "", task, flags=re.IGNORECASE)
+    task = _strip_trailing_period(task.strip())
+    if not task:
+        return ""
+    return task[:1].upper() + task[1:]
+
+
+def _infer_priority(text: str, deadline: str) -> str:
+    combined = f"{text} {deadline}".lower()
+    if any(
+        token in combined
+        for token in ["launch", "uat", "blocker", "legal", "tomorrow", "today", "friday"]
+    ):
+        return "High"
+    if deadline:
+        return "Medium"
+    return "Low"
+
+
+def _infer_status(text: str) -> str:
+    lower = text.lower()
+    if any(token in lower for token in ["blocked", "waiting on", "awaiting"]):
+        return "Blocked"
+    if any(token in lower for token in ["still", "almost ready", "incomplete", "need support"]):
+        return "In Progress"
+    return "Not Started"
+
+
+def _extract_action_items(utterances: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    action_items: List[Dict[str, str]] = []
+    seen_tasks = set()
+    action_patterns = [
+        (r"^I will\s+(.+)", True),
+        (r"^I can\s+(.+)", True),
+        (r"^We need to\s+(.+)", False),
+        (r"^We also need to\s+(.+)", False),
+        (r"^We need\s+(.+)", False),
+        (r"^Please\s+(.+)", False),
+    ]
+
+    for item in utterances:
+        speaker = item["speaker"]
+        content = item["content"]
+        matched_text = ""
+        owner = ""
+
+        for pattern, assign_speaker in action_patterns:
+            match = re.search(pattern, content, flags=re.IGNORECASE)
+            if match:
+                matched_text = match.group(1)
+                owner = speaker if assign_speaker else ""
+                break
+
+        if not matched_text:
+            continue
+
+        deadline = _extract_deadline(content)
+        task = _normalize_task_text(matched_text)
+        task_key = task.lower()
+        if not task or task_key in seen_tasks or task_key in {"complete that", "do that"}:
+            continue
+        seen_tasks.add(task_key)
+
+        notes = ""
+        lower = content.lower()
+        if "support" in lower:
+            notes = "Support dependency noted in transcript."
+        elif "approval" in lower:
+            notes = "Approval dependency called out in transcript."
+        elif "blocker" in lower or "risk" in lower:
+            notes = "Linked to a stated risk or blocker."
+
+        action_items.append(
             {
-                "task": "Finalize landing page copy and coordinate with design.",
-                "owner": "Arjun",
-                "deadline": "Friday",
-                "priority": "High",
-                "status": "Not Started",
-                "notes": "Critical for launch readiness.",
-            },
-            {
-                "task": "Complete analytics instrumentation.",
-                "owner": "Ravi",
-                "deadline": "Next Tuesday",
-                "priority": "High",
-                "status": "In Progress",
-                "notes": "Support needed from DevOps.",
-            },
-            {
-                "task": "Send pricing page to legal for approval.",
-                "owner": "Nina",
-                "deadline": "Tomorrow 2 PM",
-                "priority": "Medium",
-                "status": "Not Started",
-                "notes": "Potential blocker to launch content.",
-            },
-        ],
+                "task": task,
+                "owner": owner,
+                "deadline": deadline,
+                "priority": _infer_priority(content, deadline),
+                "status": _infer_status(content),
+                "notes": notes,
+            }
+        )
+
+    return action_items
+
+
+def _extract_decisions(utterances: List[Dict[str, str]]) -> List[str]:
+    decisions = []
+    for item in utterances:
+        content = item["content"]
+        match = re.search(r"decision(?:\s+taken)?\s*:\s*(.+)", content, flags=re.IGNORECASE)
+        if match:
+            decisions.append(_strip_trailing_period(_clean_text(match.group(1))) + ".")
+    return decisions
+
+
+def _extract_risks(utterances: List[Dict[str, str]]) -> List[str]:
+    risks = []
+    for item in utterances:
+        content = item["content"]
+        lower = content.lower()
+        if ("risk" in lower or "blocker" in lower) and "decision" not in lower:
+            risk_text = re.sub(
+                r"^(main|another)\s+(risk|blocker)\s+is\s+",
+                "",
+                content,
+                flags=re.IGNORECASE,
+            )
+            risks.append(_strip_trailing_period(_clean_text(risk_text)) + ".")
+    return risks
+
+
+def _build_summary(
+    meeting_title: str,
+    action_items: List[Dict[str, str]],
+    decisions: List[str],
+    risks: List[str],
+) -> str:
+    parts = [f"{meeting_title} focused on operational follow-through and execution planning."]
+    if action_items:
+        first_tasks = ", ".join(item["task"] for item in action_items[:2])
+        parts.append(
+            f"The team identified {len(action_items)} action items, including {first_tasks.lower()}."
+        )
+    if decisions:
+        parts.append(f"Key decision: {decisions[0]}")
+    if risks:
+        parts.append(f"Main risk: {risks[0]}")
+    return " ".join(parts)
+
+
+def mock_extract(transcript: str) -> Dict[str, Any]:
+    meta = _extract_meta(transcript)
+    utterances = _parse_utterances(transcript)
+    action_items = _extract_action_items(utterances)
+    decisions = _extract_decisions(utterances)
+    risks = _extract_risks(utterances)
+
+    return {
+        "meeting_title": meta["meeting_title"],
+        "meeting_date": meta["meeting_date"],
+        "summary": _build_summary(
+            meta["meeting_title"], action_items, decisions, risks
+        ),
+        "decisions": decisions,
+        "risks_blockers": risks,
+        "action_items": action_items,
     }
 
 
@@ -1160,8 +1621,27 @@ def render_execution_readiness(stats: Dict[str, Any]) -> None:
     )
 
 
+def _pdf_safe_text(text: str) -> str:
+    replacements = {
+        "\u2013": "-",
+        "\u2014": "-",
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201c": '"',
+        "\u201d": '"',
+        "\u2022": "-",
+        "\u2026": "...",
+        "\u00a0": " ",
+    }
+    safe = str(text)
+    for old, new in replacements.items():
+        safe = safe.replace(old, new)
+    return safe.encode("latin-1", errors="replace").decode("latin-1")
+
+
 def pdf_escape(text: str) -> str:
-    return text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+    safe = _pdf_safe_text(text)
+    return safe.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
 
 def generate_simple_pdf(title: str, lines: List[str]) -> bytes:
@@ -1372,16 +1852,34 @@ def render_header() -> None:
 
 def render_sidebar(samples: Dict[str, str]) -> None:
     with st.sidebar:
-        st.markdown(f"## {APP_NAME}")
-        st.caption("AI meeting summary + action tracker")
-        st.markdown("---")
-        st.write("**Workspace**")
         st.markdown(
-            "- Paste or upload transcript\n"
-            "- Extract meeting intelligence\n"
-            "- Review and edit action register\n"
-            "- Export CSV or JSON"
+            f"""
+            <div class="sidebar-shell">
+                <div class="sidebar-header">
+                    <div>
+                        <div class="sidebar-title">{APP_NAME}</div>
+                        <div class="sidebar-subtitle">AI meeting summary + action tracker</div>
+                    </div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
+        st.markdown("<div class='sidebar-section-label'>Recent Chats</div>", unsafe_allow_html=True)
+        if st.session_state.recent_sessions:
+            for idx, session in enumerate(st.session_state.recent_sessions):
+                label = f"{session['title']}  •  {session.get('meeting_date', '')}"
+                if st.button(label, key=f"recent_session_{idx}", use_container_width=True):
+                    st.session_state.transcript_text = session["transcript_text"]
+                    st.session_state.last_source = session["source"]
+                    st.session_state.parsed = session.get("parsed")
+                    st.session_state.edited_df = to_dataframe(st.session_state.parsed)
+        else:
+            st.markdown(
+                "<div class='sidebar-hint'>Your recent extracted meetings will appear here for quick reload during this session.</div>",
+                unsafe_allow_html=True,
+            )
+
         st.markdown("---")
         st.write("**Usage guardrail**")
         left = max(0, MAX_DAILY_REQUESTS - int(st.session_state.request_count))
@@ -1396,8 +1894,15 @@ def render_sidebar(samples: Dict[str, str]) -> None:
                 "Load a sample", ["Select a sample..."] + list(samples.keys())
             )
             if selected != "Select a sample...":
-                st.session_state.transcript_text = samples[selected]
-                st.session_state.last_source = selected
+                selected_text = samples[selected]
+                if (
+                    st.session_state.transcript_text != selected_text
+                    or st.session_state.last_source != selected
+                ):
+                    st.session_state.transcript_text = selected_text
+                    st.session_state.last_source = selected
+                    st.session_state.parsed = None
+                    st.session_state.edited_df = None
         else:
             st.caption("No sample files found in sample_transcripts/")
         st.markdown("---")
@@ -1427,10 +1932,15 @@ def main() -> None:
             "Upload transcript (.txt)", type=["txt"], label_visibility="collapsed"
         )
         if uploaded is not None:
-            st.session_state.transcript_text = uploaded.read().decode(
-                "utf-8", errors="ignore"
-            )
-            st.session_state.last_source = uploaded.name
+            uploaded_text = uploaded.read().decode("utf-8", errors="ignore")
+            if (
+                st.session_state.transcript_text != uploaded_text
+                or st.session_state.last_source != uploaded.name
+            ):
+                st.session_state.transcript_text = uploaded_text
+                st.session_state.last_source = uploaded.name
+                st.session_state.parsed = None
+                st.session_state.edited_df = None
 
         st.markdown(
             "<div class='subsection-title'>Paste transcript</div>",
@@ -1463,6 +1973,11 @@ def main() -> None:
                         st.session_state.transcript_text
                     )
                     st.session_state.edited_df = to_dataframe(st.session_state.parsed)
+                    add_recent_session(
+                        st.session_state.transcript_text,
+                        st.session_state.last_source,
+                        st.session_state.parsed,
+                    )
 
     with top_right:
         st.markdown("<div class='metrics-stack'>", unsafe_allow_html=True)
